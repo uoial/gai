@@ -35,7 +35,7 @@ jobs:
         run: |
           extension=cpp/bin/macos/libgai_cpp.macos.template_debug.dylib
           cp "${extension%.dylib}.arm64.dylib" "$extension"
-          lipo -verify_arch arm64 "$extension"
+          lipo "$extension" -verify_arch arm64
           git archive --format=zip --output=GAI-macOS.zip HEAD
           zip -q GAI-macOS.zip "$extension"
 
