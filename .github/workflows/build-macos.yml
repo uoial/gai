@@ -1,0 +1,46 @@
+name: Build GAI for Mac
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Get godot-cpp
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot-cpp
+          ref: c83a65144f01ad65b4fbbca76f1a4108d2fca1f2
+          path: .dependency/godot-cpp
+          persist-credentials: false
+
+      - name: Compile the Apple Silicon extension
+        working-directory: cpp
+        run: |
+          python -m pip install scons
+          scons platform=macos arch=arm64 api_version=4.6 target=template_debug -j 3
+
+      - name: Package the Godot project
+        run: |
+          extension=cpp/bin/macos/libgai_cpp.macos.template_debug.dylib
+          cp "${extension%.dylib}.arm64.dylib" "$extension"
+          lipo -verify_arch arm64 "$extension"
+          git archive --format=zip --output=GAI-macOS.zip HEAD
+          zip -q GAI-macOS.zip "$extension"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GAI-macOS
+          path: GAI-macOS.zip
+          if-no-files-found: error
